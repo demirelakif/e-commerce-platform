@@ -72,7 +72,7 @@ export const getProducts = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Get products error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -111,7 +111,7 @@ export const getProduct = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Get product error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -191,13 +191,13 @@ export const createProduct = async (req: Request, res: Response) => {
       $inc: { productCount: 1 }
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: product
     });
   } catch (error) {
     console.error('Create product error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -236,7 +236,7 @@ export const updateProduct = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Update product error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -270,7 +270,7 @@ export const deleteProduct = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Delete product error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -301,7 +301,7 @@ export const uploadProductImages = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Upload images error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -323,7 +323,7 @@ export const getFeaturedProducts = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Get featured products error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -346,7 +346,7 @@ export const getPopularProducts = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Get popular products error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -381,7 +381,7 @@ export const getRelatedProducts = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Get related products error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -415,7 +415,7 @@ export const searchProducts = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Search products error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });

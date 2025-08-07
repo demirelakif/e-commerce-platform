@@ -1,7 +1,7 @@
-import { configureStore } from '@reduxjs/toolkit';
-import authReducer from './slices/authSlice';
-import cartReducer from './slices/cartSlice';
-import uiReducer from './slices/uiSlice';
+import { configureStore } from "@reduxjs/toolkit";
+import authReducer from "./slices/authSlice";
+import cartReducer from "./slices/cartSlice";
+import uiReducer from "./slices/uiSlice";
 
 export const store = configureStore({
   reducer: {
@@ -12,10 +12,31 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+        ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
       },
     }),
+  preloadedState: {
+    auth: {
+      user: null,
+      token: typeof window !== "undefined" ? localStorage.getItem("token") : null,
+      isAuthenticated: typeof window !== "undefined" ? !!localStorage.getItem("token") : false,
+      isLoading: false,
+      error: null,
+    },
+    cart: {
+      items: [],
+      itemCount: 0,
+      total: 0,
+    },
+    ui: {
+      isLoading: false,
+      sidebarOpen: false,
+      searchModalOpen: false,
+      cartDrawerOpen: false,
+      notifications: [],
+    },
+  },
 });
 
 export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch; 
+export type AppDispatch = typeof store.dispatch;

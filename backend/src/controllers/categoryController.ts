@@ -17,7 +17,7 @@ export const getCategories = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Get categories error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -44,7 +44,7 @@ export const getCategory = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Get category error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -83,13 +83,13 @@ export const createCategory = async (req: Request, res: Response) => {
       sortOrder: sortOrder || 0
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: category
     });
   } catch (error) {
     console.error('Create category error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -144,7 +144,7 @@ export const updateCategory = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Update category error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -182,7 +182,7 @@ export const deleteCategory = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Delete category error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });

@@ -1,6 +1,6 @@
-import { Request, Response } from 'express';
-import { validationResult } from 'express-validator';
-import User from '../models/User';
+import { Request, Response } from "express";
+import { validationResult } from "express-validator";
+import User from "../models/User";
 
 // @desc    Update user profile
 // @route   PUT /api/users/profile
@@ -11,27 +11,23 @@ export const updateProfile = async (req: Request, res: Response) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        error: errors.array()[0].msg
+        error: errors.array()[0].msg,
       });
     }
 
     const { firstName, lastName, phone } = req.body;
 
-    const user = await User.findByIdAndUpdate(
-      req.user!._id,
-      { firstName, lastName, phone },
-      { new: true, runValidators: true }
-    );
+    const user = await User.findByIdAndUpdate(req.user!._id, { firstName, lastName, phone }, { new: true, runValidators: true });
 
     res.json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
-    console.error('Update profile error:', error);
-    res.status(500).json({
+    console.error("Update profile error:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -45,7 +41,7 @@ export const addAddress = async (req: Request, res: Response) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        error: errors.array()[0].msg
+        error: errors.array()[0].msg,
       });
     }
 
@@ -55,7 +51,7 @@ export const addAddress = async (req: Request, res: Response) => {
 
     if (isDefault) {
       // Remove default from other addresses of same type
-      user!.addresses.forEach(address => {
+      user!.addresses.forEach((address) => {
         if (address.type === type) {
           address.isDefault = false;
         }
@@ -68,21 +64,21 @@ export const addAddress = async (req: Request, res: Response) => {
       city,
       state,
       zipCode,
-      country: country || 'United States',
-      isDefault: isDefault || false
+      country: country || "United States",
+      isDefault: isDefault || false,
     });
 
     await user!.save();
 
     res.json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
-    console.error('Add address error:', error);
-    res.status(500).json({
+    console.error("Add address error:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -96,7 +92,7 @@ export const updateAddress = async (req: Request, res: Response) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        error: errors.array()[0].msg
+        error: errors.array()[0].msg,
       });
     }
 
@@ -104,21 +100,18 @@ export const updateAddress = async (req: Request, res: Response) => {
     const addressId = req.params.id;
 
     const user = await User.findById(req.user!._id);
-    const addressIndex = user!.addresses.findIndex(
-      addr => addr._id.toString() === addressId
-    );
-
-    if (addressIndex === -1) {
+    const addressIndex = parseInt(addressId);
+    if (addressIndex < 0 || addressIndex >= user!.addresses.length) {
       return res.status(404).json({
         success: false,
-        error: 'Address not found'
+        error: "Address not found",
       });
     }
 
     if (isDefault) {
       // Remove default from other addresses of same type
-      user!.addresses.forEach(address => {
-        if (address.type === type && address._id.toString() !== addressId) {
+      user!.addresses.forEach((address, index) => {
+        if (address.type === type && index !== addressIndex) {
           address.isDefault = false;
         }
       });
@@ -131,21 +124,21 @@ export const updateAddress = async (req: Request, res: Response) => {
       city,
       state,
       zipCode,
-      country: country || 'United States',
-      isDefault: isDefault || false
+      country: country || "United States",
+      isDefault: isDefault || false,
     };
 
     await user!.save();
 
     res.json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
-    console.error('Update address error:', error);
-    res.status(500).json({
+    console.error("Update address error:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -158,14 +151,11 @@ export const deleteAddress = async (req: Request, res: Response) => {
     const addressId = req.params.id;
 
     const user = await User.findById(req.user!._id);
-    const addressIndex = user!.addresses.findIndex(
-      addr => addr._id.toString() === addressId
-    );
-
-    if (addressIndex === -1) {
+    const addressIndex = parseInt(addressId);
+    if (addressIndex < 0 || addressIndex >= user!.addresses.length) {
       return res.status(404).json({
         success: false,
-        error: 'Address not found'
+        error: "Address not found",
       });
     }
 
@@ -174,13 +164,13 @@ export const deleteAddress = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
-    console.error('Delete address error:', error);
-    res.status(500).json({
+    console.error("Delete address error:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -193,19 +183,24 @@ export const setDefaultAddress = async (req: Request, res: Response) => {
     const addressId = req.params.id;
 
     const user = await User.findById(req.user!._id);
-    const address = user!.addresses.find(
-      addr => addr._id.toString() === addressId
-    );
+    const addressIndex = parseInt(addressId);
+    if (addressIndex < 0 || addressIndex >= user!.addresses.length) {
+      return res.status(404).json({
+        success: false,
+        error: "Address not found",
+      });
+    }
+    const address = user!.addresses[addressIndex];
 
     if (!address) {
       return res.status(404).json({
         success: false,
-        error: 'Address not found'
+        error: "Address not found",
       });
     }
 
     // Remove default from other addresses of same type
-    user!.addresses.forEach(addr => {
+    user!.addresses.forEach((addr) => {
       if (addr.type === address.type) {
         addr.isDefault = false;
       }
@@ -217,13 +212,13 @@ export const setDefaultAddress = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
-    console.error('Set default address error:', error);
-    res.status(500).json({
+    console.error("Set default address error:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -238,21 +233,21 @@ export const updatePreferences = async (req: Request, res: Response) => {
     const user = await User.findByIdAndUpdate(
       req.user!._id,
       {
-        'preferences.favoriteCategories': favoriteCategories,
-        'preferences.newsletterSubscription': newsletterSubscription
+        "preferences.favoriteCategories": favoriteCategories,
+        "preferences.newsletterSubscription": newsletterSubscription,
       },
       { new: true }
     );
 
     res.json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
-    console.error('Update preferences error:', error);
-    res.status(500).json({
+    console.error("Update preferences error:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -262,18 +257,17 @@ export const updatePreferences = async (req: Request, res: Response) => {
 // @access  Private
 export const getWishlist = async (req: Request, res: Response) => {
   try {
-    const user = await User.findById(req.user!._id)
-      .populate('wishlist', 'name mainImage price averageRating');
+    const user = await User.findById(req.user!._id).populate("wishlist", "name mainImage price averageRating");
 
     res.json({
       success: true,
-      data: user!.wishlist || []
+      data: user!.wishlist || [],
     });
   } catch (error) {
-    console.error('Get wishlist error:', error);
-    res.status(500).json({
+    console.error("Get wishlist error:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -286,7 +280,7 @@ export const addToWishlist = async (req: Request, res: Response) => {
     const { productId } = req.params;
 
     const user = await User.findById(req.user!._id);
-    
+
     if (!user!.wishlist) {
       user!.wishlist = [];
     }
@@ -294,25 +288,24 @@ export const addToWishlist = async (req: Request, res: Response) => {
     if (user!.wishlist.includes(productId)) {
       return res.status(400).json({
         success: false,
-        error: 'Product already in wishlist'
+        error: "Product already in wishlist",
       });
     }
 
     user!.wishlist.push(productId);
     await user!.save();
 
-    const populatedUser = await User.findById(user!._id)
-      .populate('wishlist', 'name mainImage price averageRating');
+    const populatedUser = await User.findById(user!._id).populate("wishlist", "name mainImage price averageRating");
 
     res.json({
       success: true,
-      data: populatedUser!.wishlist
+      data: populatedUser!.wishlist,
     });
   } catch (error) {
-    console.error('Add to wishlist error:', error);
-    res.status(500).json({
+    console.error("Add to wishlist error:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -325,11 +318,11 @@ export const removeFromWishlist = async (req: Request, res: Response) => {
     const { productId } = req.params;
 
     const user = await User.findById(req.user!._id);
-    
+
     if (!user!.wishlist) {
       return res.status(404).json({
         success: false,
-        error: 'Wishlist is empty'
+        error: "Wishlist is empty",
       });
     }
 
@@ -337,25 +330,24 @@ export const removeFromWishlist = async (req: Request, res: Response) => {
     if (productIndex === -1) {
       return res.status(404).json({
         success: false,
-        error: 'Product not found in wishlist'
+        error: "Product not found in wishlist",
       });
     }
 
     user!.wishlist.splice(productIndex, 1);
     await user!.save();
 
-    const populatedUser = await User.findById(user!._id)
-      .populate('wishlist', 'name mainImage price averageRating');
+    const populatedUser = await User.findById(user!._id).populate("wishlist", "name mainImage price averageRating");
 
     res.json({
       success: true,
-      data: populatedUser!.wishlist
+      data: populatedUser!.wishlist,
     });
   } catch (error) {
-    console.error('Remove from wishlist error:', error);
-    res.status(500).json({
+    console.error("Remove from wishlist error:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
-}; 
+};

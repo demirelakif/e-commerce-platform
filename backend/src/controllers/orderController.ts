@@ -51,7 +51,7 @@ export const getOrders = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Get orders error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -96,7 +96,7 @@ export const getUserOrders = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Get user orders error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -120,7 +120,7 @@ export const getOrder = async (req: Request, res: Response) => {
     }
 
     // Check if user is authorized to view this order
-    if (req.user!.role !== 'admin' && order.user.toString() !== req.user!._id.toString()) {
+    if (req.user!.role !== 'admin' && order.user?.toString() !== req.user!._id.toString()) {
       return res.status(403).json({
         success: false,
         error: 'Not authorized to view this order'
@@ -133,7 +133,7 @@ export const getOrder = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Get order error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -217,13 +217,13 @@ export const createOrder = async (req: Request, res: Response) => {
       .populate('user', 'firstName lastName email')
       .populate('items.product', 'name mainImage price');
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: populatedOrder
     });
   } catch (error) {
     console.error('Create order error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -277,7 +277,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Update order status error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });

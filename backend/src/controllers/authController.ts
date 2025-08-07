@@ -1,9 +1,9 @@
-import { Request, Response } from 'express';
-import { validationResult } from 'express-validator';
-import crypto from 'crypto';
-import User, { IUser } from '../models/User';
-import { generateToken } from '../middleware/auth';
-import { sendEmail } from '../utils/email';
+import { Request, Response } from "express";
+import { validationResult } from "express-validator";
+import crypto from "crypto";
+import User, { IUser } from "../models/User";
+import { generateToken } from "../middleware/auth";
+import { sendEmail } from "../utils/email";
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -14,7 +14,7 @@ export const register = async (req: Request, res: Response) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        error: errors.array()[0].msg
+        error: errors.array()[0].msg,
       });
     }
 
@@ -25,12 +25,12 @@ export const register = async (req: Request, res: Response) => {
     if (userExists) {
       return res.status(400).json({
         success: false,
-        error: 'User already exists'
+        error: "User already exists",
       });
     }
 
     // Generate email verification token
-    const emailVerificationToken = crypto.randomBytes(32).toString('hex');
+    const emailVerificationToken = crypto.randomBytes(32).toString("hex");
     const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     // Create user
@@ -41,34 +41,34 @@ export const register = async (req: Request, res: Response) => {
       lastName,
       phone,
       emailVerificationToken,
-      emailVerificationExpires
+      emailVerificationExpires,
     });
 
     // Generate token
-    const token = generateToken(user._id);
+    const token = generateToken((user._id as any).toString());
 
     // Send verification email
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email/${emailVerificationToken}`;
-    
+    const verificationUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/verify-email/${emailVerificationToken}`;
+
     await sendEmail({
       email: user.email,
-      subject: 'Email Verification',
-      message: `Please click the following link to verify your email: ${verificationUrl}`
+      subject: "Email Verification",
+      message: `Please click the following link to verify your email: ${verificationUrl}`,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: {
         user,
-        token
+        token,
       },
-      message: 'Registration successful. Please check your email to verify your account.'
+      message: "Registration successful. Please check your email to verify your account.",
     });
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({
+    console.error("Registration error:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -82,18 +82,18 @@ export const login = async (req: Request, res: Response) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        error: errors.array()[0].msg
+        error: errors.array()[0].msg,
       });
     }
 
     const { email, password } = req.body;
 
     // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
       return res.status(401).json({
         success: false,
-        error: 'Invalid credentials'
+        error: "Invalid credentials",
       });
     }
 
@@ -102,7 +102,7 @@ export const login = async (req: Request, res: Response) => {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        error: 'Invalid credentials'
+        error: "Invalid credentials",
       });
     }
 
@@ -111,20 +111,20 @@ export const login = async (req: Request, res: Response) => {
     await user.save();
 
     // Generate token
-    const token = generateToken(user._id);
+    const token = generateToken((user._id as any).toString());
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         user,
-        token
-      }
+        token,
+      },
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({
+    console.error("Login error:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -135,7 +135,7 @@ export const login = async (req: Request, res: Response) => {
 export const logout = async (req: Request, res: Response) => {
   res.json({
     success: true,
-    message: 'Logged out successfully'
+    message: "Logged out successfully",
   });
 };
 
@@ -145,16 +145,16 @@ export const logout = async (req: Request, res: Response) => {
 export const getMe = async (req: Request, res: Response) => {
   try {
     const user = await User.findById(req.user!._id);
-    
+
     res.json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
-    console.error('Get me error:', error);
-    res.status(500).json({
+    console.error("Get me error:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -168,7 +168,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        error: errors.array()[0].msg
+        error: errors.array()[0].msg,
       });
     }
 
@@ -179,20 +179,20 @@ export const updateProfile = async (req: Request, res: Response) => {
       {
         firstName,
         lastName,
-        phone
+        phone,
       },
       { new: true, runValidators: true }
     );
 
     res.json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
-    console.error('Update profile error:', error);
-    res.status(500).json({
+    console.error("Update profile error:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -206,7 +206,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        error: errors.array()[0].msg
+        error: errors.array()[0].msg,
       });
     }
 
@@ -216,13 +216,13 @@ export const forgotPassword = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        error: 'User not found'
+        error: "User not found",
       });
     }
 
     // Generate reset token
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const passwordResetToken = crypto.createHash("sha256").update(resetToken).digest("hex");
     const passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     user.passwordResetToken = passwordResetToken;
@@ -230,23 +230,23 @@ export const forgotPassword = async (req: Request, res: Response) => {
     await user.save();
 
     // Send reset email
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password/${resetToken}`;
-    
+    const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password/${resetToken}`;
+
     await sendEmail({
       email: user.email,
-      subject: 'Password Reset',
-      message: `You requested a password reset. Please click the following link to reset your password: ${resetUrl}`
+      subject: "Password Reset",
+      message: `You requested a password reset. Please click the following link to reset your password: ${resetUrl}`,
     });
 
     res.json({
       success: true,
-      message: 'Password reset email sent'
+      message: "Password reset email sent",
     });
   } catch (error) {
-    console.error('Forgot password error:', error);
-    res.status(500).json({
+    console.error("Forgot password error:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -260,24 +260,24 @@ export const resetPassword = async (req: Request, res: Response) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        error: errors.array()[0].msg
+        error: errors.array()[0].msg,
       });
     }
 
     const { token, password } = req.body;
 
     // Get hashed token
-    const passwordResetToken = crypto.createHash('sha256').update(token).digest('hex');
+    const passwordResetToken = crypto.createHash("sha256").update(token).digest("hex");
 
     const user = await User.findOne({
       passwordResetToken,
-      passwordResetExpires: { $gt: Date.now() }
+      passwordResetExpires: { $gt: Date.now() },
     });
 
     if (!user) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid or expired reset token'
+        error: "Invalid or expired reset token",
       });
     }
 
@@ -289,13 +289,13 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: 'Password reset successful'
+      message: "Password reset successful",
     });
   } catch (error) {
-    console.error('Reset password error:', error);
-    res.status(500).json({
+    console.error("Reset password error:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -309,13 +309,13 @@ export const verifyEmail = async (req: Request, res: Response) => {
 
     const user = await User.findOne({
       emailVerificationToken: token,
-      emailVerificationExpires: { $gt: Date.now() }
+      emailVerificationExpires: { $gt: Date.now() },
     });
 
     if (!user) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid or expired verification token'
+        error: "Invalid or expired verification token",
       });
     }
 
@@ -326,13 +326,13 @@ export const verifyEmail = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: 'Email verified successfully'
+      message: "Email verified successfully",
     });
   } catch (error) {
-    console.error('Verify email error:', error);
-    res.status(500).json({
+    console.error("Verify email error:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -347,12 +347,12 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
     if (user!.isEmailVerified) {
       return res.status(400).json({
         success: false,
-        error: 'Email is already verified'
+        error: "Email is already verified",
       });
     }
 
     // Generate new verification token
-    const emailVerificationToken = crypto.randomBytes(32).toString('hex');
+    const emailVerificationToken = crypto.randomBytes(32).toString("hex");
     const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     user!.emailVerificationToken = emailVerificationToken;
@@ -360,23 +360,23 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
     await user!.save();
 
     // Send verification email
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email/${emailVerificationToken}`;
-    
+    const verificationUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/verify-email/${emailVerificationToken}`;
+
     await sendEmail({
       email: user!.email,
-      subject: 'Email Verification',
-      message: `Please click the following link to verify your email: ${verificationUrl}`
+      subject: "Email Verification",
+      message: `Please click the following link to verify your email: ${verificationUrl}`,
     });
 
     res.json({
       success: true,
-      message: 'Verification email sent'
+      message: "Verification email sent",
     });
   } catch (error) {
-    console.error('Resend verification error:', error);
-    res.status(500).json({
+    console.error("Resend verification error:", error);
+    return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
-}; 
+};

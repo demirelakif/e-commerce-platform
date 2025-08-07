@@ -40,7 +40,7 @@ export const getProductReviews = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Get product reviews error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -96,14 +96,14 @@ export const createReview = async (req: Request, res: Response) => {
     const populatedReview = await Review.findById(review._id)
       .populate('user', 'firstName lastName');
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: populatedReview,
       message: 'Review submitted successfully and pending approval'
     });
   } catch (error) {
     console.error('Create review error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -133,7 +133,7 @@ export const updateReview = async (req: Request, res: Response) => {
     }
 
     // Check if user owns this review
-    if (review.user.toString() !== req.user!._id.toString()) {
+    if (review.user?.toString() !== req.user!._id.toString()) {
       return res.status(403).json({
         success: false,
         error: 'Not authorized to update this review'
@@ -152,7 +152,7 @@ export const updateReview = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Update review error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -174,7 +174,7 @@ export const deleteReview = async (req: Request, res: Response) => {
     }
 
     // Check if user owns this review or is admin
-    if (review.user.toString() !== req.user!._id.toString() && req.user!.role !== 'admin') {
+    if (review.user?.toString() !== req.user!._id.toString() && req.user!.role !== 'admin') {
       return res.status(403).json({
         success: false,
         error: 'Not authorized to delete this review'
@@ -189,7 +189,7 @@ export const deleteReview = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Delete review error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -223,7 +223,7 @@ export const approveReview = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Approve review error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });
@@ -260,7 +260,7 @@ export const getMyReviews = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Get my reviews error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Server error'
     });

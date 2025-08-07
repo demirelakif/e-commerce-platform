@@ -1,5 +1,5 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { api } from '@/lib/api';
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { api } from "@/lib/api";
 
 export interface User {
   _id: string;
@@ -7,11 +7,11 @@ export interface User {
   firstName: string;
   lastName: string;
   phone?: string;
-  role: 'admin' | 'customer';
+  role: "admin" | "customer";
   isEmailVerified: boolean;
   addresses: Array<{
     _id: string;
-    type: 'shipping' | 'billing';
+    type: "shipping" | "billing";
     street: string;
     city: string;
     state: string;
@@ -37,89 +37,90 @@ interface AuthState {
 
 const initialState: AuthState = {
   user: null,
-  token: typeof window !== 'undefined' ? localStorage.getItem('token') : null,
-  isAuthenticated: false,
+  token: typeof window !== "undefined" ? localStorage.getItem("token") : null,
+  isAuthenticated: typeof window !== "undefined" ? !!localStorage.getItem("token") : false,
   isLoading: false,
   error: null,
 };
 
 // Async thunks
 export const login = createAsyncThunk(
-  'auth/login',
+  "auth/login",
   async (credentials: { email: string; password: string }, { rejectWithValue }) => {
     try {
-      const response = await api.post('/auth/login', credentials);
+      const response = await api.post("/auth/login", credentials);
+      console.log("geliyo mu ki");
       const { user, token } = response.data.data;
-      
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', token);
+      console.log("response:", response);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("token", token);
       }
-      
+
       return { user, token };
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error || 'Login failed');
+      return rejectWithValue(error.response?.data?.error || "Login failed");
     }
   }
 );
 
 export const register = createAsyncThunk(
-  'auth/register',
-  async (userData: {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    phone?: string;
-  }, { rejectWithValue }) => {
+  "auth/register",
+  async (
+    userData: {
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+      phone?: string;
+    },
+    { rejectWithValue }
+  ) => {
     try {
-      const response = await api.post('/auth/register', userData);
+      const response = await api.post("/auth/register", userData);
       const { user, token } = response.data.data;
-      
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', token);
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("token", token);
       }
-      
+
       return { user, token };
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error || 'Registration failed');
+      return rejectWithValue(error.response?.data?.error || "Registration failed");
     }
   }
 );
 
-export const getCurrentUser = createAsyncThunk(
-  'auth/getCurrentUser',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await api.get('/auth/me');
-      return response.data.data;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error || 'Failed to get user');
-    }
+export const getCurrentUser = createAsyncThunk("auth/getCurrentUser", async (_, { rejectWithValue }) => {
+  try {
+    const response = await api.get("/auth/me");
+    return response.data.data;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.error || "Failed to get user");
   }
-);
+});
 
 export const updateProfile = createAsyncThunk(
-  'auth/updateProfile',
+  "auth/updateProfile",
   async (profileData: { firstName?: string; lastName?: string; phone?: string }, { rejectWithValue }) => {
     try {
-      const response = await api.put('/auth/profile', profileData);
+      const response = await api.put("/auth/profile", profileData);
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error || 'Failed to update profile');
+      return rejectWithValue(error.response?.data?.error || "Failed to update profile");
     }
   }
 );
 
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
     logout: (state) => {
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
       }
     },
     clearError: (state) => {
@@ -176,8 +177,8 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('token');
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("token");
         }
       })
       // Update profile
@@ -197,4 +198,4 @@ const authSlice = createSlice({
 });
 
 export const { logout, clearError, setToken } = authSlice.actions;
-export default authSlice.reducer; 
+export default authSlice.reducer;
