@@ -73,11 +73,15 @@ export default function ProductsPage() {
         page: currentPage.toString(),
         limit: "12",
         search: searchQuery,
-        category: categoryFilter,
         sortBy,
         minPrice: priceRange[0].toString(),
         maxPrice: priceRange[1].toString(),
       });
+
+      // Only add category parameter if it's not empty
+      if (categoryFilter && categoryFilter.trim() !== "") {
+        params.append("category", categoryFilter);
+      }
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products?${params}`);
       const data = await response.json();

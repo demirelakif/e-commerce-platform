@@ -22,7 +22,10 @@ export default function LoginPage() {
   const onFinish = async (values: LoginForm) => {
     setLoading(true);
     try {
+      console.log("asdadasd");
       const result = await dispatch(login(values));
+      console.log("result:", result);
+
       if (login.fulfilled.match(result)) {
         message.success("Login successful!");
         router.push("/");

@@ -48,17 +48,49 @@ export const login = createAsyncThunk(
   "auth/login",
   async (credentials: { email: string; password: string }, { rejectWithValue }) => {
     try {
+      console.log("Login attempt with credentials:", credentials);
+      console.log("API base URL:", process.env.NEXT_PUBLIC_API_URL);
+
       const response = await api.post("/auth/login", credentials);
-      console.log("geliyo mu ki");
+      console.log("Login response received:", response.data);
+
+      // Check if response has the expected structure
+      if (!response.data || !response.data.success || !response.data.data) {
+        console.error("Invalid response structure:", response.data);
+        return rejectWithValue("Invalid response from server");
+      }
+
       const { user, token } = response.data.data;
-      console.log("response:", response);
+
+      // Validate user and token
+      if (!user || !token) {
+        console.error("Missing user or token in response:", response.data);
+        return rejectWithValue("Invalid response data");
+      }
+
+      console.log("Extracted user and token:", { user: user.email, token: token.substring(0, 20) + "..." });
+
       if (typeof window !== "undefined") {
         localStorage.setItem("token", token);
       }
 
       return { user, token };
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error || "Login failed");
+      console.error("Login error details:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: error.config,
+      });
+
+      // Better error handling
+      if (error.response?.data?.error) {
+        return rejectWithValue(error.response.data.error);
+      } else if (error.message) {
+        return rejectWithValue(error.message);
+      } else {
+        return rejectWithValue("Login failed");
+      }
     }
   }
 );

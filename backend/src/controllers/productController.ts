@@ -1,8 +1,8 @@
-import { Request, Response } from 'express';
-import { validationResult } from 'express-validator';
-import Product, { IProduct } from '../models/Product';
-import Category from '../models/Category';
-import { uploadToCloudinary } from '../utils/cloudinary';
+import { Request, Response } from "express";
+import { validationResult } from "express-validator";
+import Product, { IProduct } from "../models/Product";
+import Category from "../models/Category";
+import { uploadToCloudinary } from "../utils/cloudinary";
 
 // @desc    Get all products with filtering and pagination
 // @route   GET /api/products
@@ -16,10 +16,10 @@ export const getProducts = async (req: Request, res: Response) => {
       minPrice,
       maxPrice,
       rating,
-      sort = 'createdAt',
-      order = 'desc',
+      sort = "createdAt",
+      order = "desc",
       search,
-      isActive = true
+      isActive = true,
     } = req.query;
 
     // Build query
@@ -45,14 +45,14 @@ export const getProducts = async (req: Request, res: Response) => {
 
     // Build sort object
     const sortObj: any = {};
-    sortObj[sort as string] = order === 'asc' ? 1 : -1;
+    sortObj[sort as string] = order === "asc" ? 1 : -1;
 
     // Calculate pagination
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
 
     // Execute query
     const products = await Product.find(query)
-      .populate('category', 'name slug')
+      .populate("category", "name slug")
       .sort(sortObj)
       .skip(skip)
       .limit(parseInt(limit as string));
@@ -67,14 +67,14 @@ export const getProducts = async (req: Request, res: Response) => {
         page: parseInt(page as string),
         limit: parseInt(limit as string),
         total,
-        pages: Math.ceil(total / parseInt(limit as string))
-      }
+        pages: Math.ceil(total / parseInt(limit as string)),
+      },
     });
   } catch (error) {
-    console.error('Get products error:', error);
+    console.error("Get products error:", error);
     return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -84,20 +84,22 @@ export const getProducts = async (req: Request, res: Response) => {
 // @access  Public
 export const getProduct = async (req: Request, res: Response) => {
   try {
-    const product = await Product.findById(req.params.id)
-      .populate('category', 'name slug')
-      .populate({
-        path: 'reviews',
-        populate: {
-          path: 'user',
-          select: 'firstName lastName'
-        }
+    const { id } = req.params;
+
+    // Validate ObjectId format
+    if (!id || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid product ID format",
       });
+    }
+
+    const product = await Product.findById(id).populate("category", "name slug");
 
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: 'Product not found'
+        error: "Product not found",
       });
     }
 
@@ -107,13 +109,22 @@ export const getProduct = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      data: product
+      data: product,
     });
   } catch (error) {
-    console.error('Get product error:', error);
+    console.error("Get product error:", error);
+
+    // Handle specific MongoDB errors
+    if (error instanceof Error && error.name === "CastError") {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid product ID format",
+      });
+    }
+
     return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -127,7 +138,7 @@ export const createProduct = async (req: Request, res: Response) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        error: errors.array()[0].msg
+        error: errors.array()[0].msg,
       });
     }
 
@@ -149,7 +160,7 @@ export const createProduct = async (req: Request, res: Response) => {
       weight,
       dimensions,
       metaTitle,
-      metaDescription
+      metaDescription,
     } = req.body;
 
     // Check if SKU already exists
@@ -157,12 +168,15 @@ export const createProduct = async (req: Request, res: Response) => {
     if (existingProduct) {
       return res.status(400).json({
         success: false,
-        error: 'SKU already exists'
+        error: "SKU already exists",
       });
     }
 
     // Generate slug from name
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const slug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
 
     const product = await Product.create({
       name,
@@ -183,23 +197,23 @@ export const createProduct = async (req: Request, res: Response) => {
       dimensions,
       slug,
       metaTitle,
-      metaDescription
+      metaDescription,
     });
 
     // Update category product count
     await Category.findByIdAndUpdate(category, {
-      $inc: { productCount: 1 }
+      $inc: { productCount: 1 },
     });
 
     return res.status(201).json({
       success: true,
-      data: product
+      data: product,
     });
   } catch (error) {
-    console.error('Create product error:', error);
+    console.error("Create product error:", error);
     return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -213,32 +227,28 @@ export const updateProduct = async (req: Request, res: Response) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        error: errors.array()[0].msg
+        error: errors.array()[0].msg,
       });
     }
 
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
 
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: 'Product not found'
+        error: "Product not found",
       });
     }
 
     res.json({
       success: true,
-      data: product
+      data: product,
     });
   } catch (error) {
-    console.error('Update product error:', error);
+    console.error("Update product error:", error);
     return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -253,26 +263,26 @@ export const deleteProduct = async (req: Request, res: Response) => {
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: 'Product not found'
+        error: "Product not found",
       });
     }
 
     // Update category product count
     await Category.findByIdAndUpdate(product.category, {
-      $inc: { productCount: -1 }
+      $inc: { productCount: -1 },
     });
 
     await product.deleteOne();
 
     res.json({
       success: true,
-      message: 'Product deleted successfully'
+      message: "Product deleted successfully",
     });
   } catch (error) {
-    console.error('Delete product error:', error);
+    console.error("Delete product error:", error);
     return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -285,25 +295,25 @@ export const uploadProductImages = async (req: Request, res: Response) => {
     if (!req.files || !Array.isArray(req.files)) {
       return res.status(400).json({
         success: false,
-        error: 'No files uploaded'
+        error: "No files uploaded",
       });
     }
 
     const uploadPromises = req.files.map(async (file: any) => {
-      return await uploadToCloudinary(file.path, 'products');
+      return await uploadToCloudinary(file.path, "products");
     });
 
     const uploadedImages = await Promise.all(uploadPromises);
 
     res.json({
       success: true,
-      data: uploadedImages
+      data: uploadedImages,
     });
   } catch (error) {
-    console.error('Upload images error:', error);
+    console.error("Upload images error:", error);
     return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -313,19 +323,17 @@ export const uploadProductImages = async (req: Request, res: Response) => {
 // @access  Public
 export const getFeaturedProducts = async (req: Request, res: Response) => {
   try {
-    const products = await Product.find({ isFeatured: true, isActive: true })
-      .populate('category', 'name slug')
-      .limit(8);
+    const products = await Product.find({ isFeatured: true, isActive: true }).populate("category", "name slug").limit(8);
 
     res.json({
       success: true,
-      data: products
+      data: products,
     });
   } catch (error) {
-    console.error('Get featured products error:', error);
+    console.error("Get featured products error:", error);
     return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -336,19 +344,19 @@ export const getFeaturedProducts = async (req: Request, res: Response) => {
 export const getPopularProducts = async (req: Request, res: Response) => {
   try {
     const products = await Product.find({ isActive: true })
-      .populate('category', 'name slug')
+      .populate("category", "name slug")
       .sort({ averageRating: -1, reviewCount: -1 })
       .limit(8);
 
     res.json({
       success: true,
-      data: products
+      data: products,
     });
   } catch (error) {
-    console.error('Get popular products error:', error);
+    console.error("Get popular products error:", error);
     return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -359,31 +367,31 @@ export const getPopularProducts = async (req: Request, res: Response) => {
 export const getRelatedProducts = async (req: Request, res: Response) => {
   try {
     const product = await Product.findById(req.params.id);
-    
+
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: 'Product not found'
+        error: "Product not found",
       });
     }
 
     const relatedProducts = await Product.find({
       _id: { $ne: product._id },
       category: product.category,
-      isActive: true
+      isActive: true,
     })
-      .populate('category', 'name slug')
+      .populate("category", "name slug")
       .limit(4);
 
     res.json({
       success: true,
-      data: relatedProducts
+      data: relatedProducts,
     });
   } catch (error) {
-    console.error('Get related products error:', error);
+    console.error("Get related products error:", error);
     return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -398,26 +406,26 @@ export const searchProducts = async (req: Request, res: Response) => {
     if (!q) {
       return res.status(400).json({
         success: false,
-        error: 'Search query is required'
+        error: "Search query is required",
       });
     }
 
     const products = await Product.find({
       $text: { $search: q as string },
-      isActive: true
+      isActive: true,
     })
-      .populate('category', 'name slug')
+      .populate("category", "name slug")
       .limit(parseInt(limit as string));
 
     res.json({
       success: true,
-      data: products
+      data: products,
     });
   } catch (error) {
-    console.error('Search products error:', error);
+    console.error("Search products error:", error);
     return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
-}; 
+};

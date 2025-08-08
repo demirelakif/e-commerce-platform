@@ -53,6 +53,20 @@
   }
 }
 
+/* Cart badge styling */
+.cart-badge .ant-badge-count {
+  @apply bg-red-500 text-white text-xs font-medium;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  border-radius: 9px;
+  padding: 0 6px;
+}
+
+.cart-badge .ant-badge-count:not(.ant-badge-count-sm) {
+  font-size: 10px;
+}
+
 /* Ant Design overrides */
 .ant-btn-primary {
   @apply bg-primary-600 hover:bg-primary-700 !important;

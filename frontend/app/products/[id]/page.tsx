@@ -1,16 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Row, Col, Button, Spin, Empty, Tag, InputNumber, Divider, Rate, Avatar } from "antd";
-import { ShoppingCartOutlined, HeartOutlined, StarFilled, UserOutlined } from "@ant-design/icons";
+import { Card, Row, Col, Button, Spin, Empty, Tag, InputNumber, Divider, Rate, Avatar, Input, Breadcrumb } from "antd";
+import { ShoppingCartOutlined, HeartOutlined, StarFilled, UserOutlined, HomeOutlined, ShareAltOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store/store";
 import { addToCart } from "@/store/slices/cartSlice";
 import { message } from "antd";
 import Image from "next/image";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
-const { TextArea } = require("antd");
+const { TextArea } = Input;
 
 interface Product {
   _id: string;
@@ -43,6 +44,20 @@ interface Product {
   }>;
 }
 
+interface RelatedProduct {
+  _id: string;
+  name: string;
+  price: number;
+  images: string[];
+  category: {
+    _id: string;
+    name: string;
+  };
+  averageRating: number;
+  reviewCount: number;
+  discount?: number;
+}
+
 export default function ProductDetailPage() {
   const params = useParams();
   const productId = params.id as string;
@@ -55,6 +70,12 @@ export default function ProductDetailPage() {
     rating: 5,
     comment: "",
   });
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
   const auth = useSelector((state: RootState) => state.auth);
@@ -64,8 +85,94 @@ export default function ProductDetailPage() {
   useEffect(() => {
     if (productId) {
       fetchProduct();
+      fetchRelatedProducts();
+      fetchReviews();
+      if (isAuthenticated) {
+        checkWishlistStatus();
+      }
     }
-  }, [productId]);
+  }, [productId, isAuthenticated]);
+
+  const fetchRelatedProducts = async () => {
+    setRelatedLoading(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${productId}/related`);
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setRelatedProducts(data.data);
+      } else {
+        setRelatedProducts([]);
+      }
+    } catch (error) {
+      console.error("Error fetching related products:", error);
+      setRelatedProducts([]);
+    } finally {
+      setRelatedLoading(false);
+    }
+  };
+
+  const checkWishlistStatus = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/wishlist`);
+      const data = await response.json();
+      if (data.success && data.data) {
+        const wishlistItems = data.data;
+        setIsInWishlist(wishlistItems.some((item: any) => item._id === productId));
+      }
+    } catch (error) {
+      console.error("Error checking wishlist status:", error);
+    }
+  };
+
+  const handleWishlistToggle = async () => {
+    if (!isAuthenticated) {
+      message.warning("Please login to manage your wishlist");
+      return;
+    }
+
+    setWishlistLoading(true);
+    try {
+      if (isInWishlist) {
+        // Remove from wishlist
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/wishlist/${productId}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        });
+        const data = await response.json();
+        if (data.success) {
+          setIsInWishlist(false);
+          message.success("Removed from wishlist");
+        } else {
+          message.error("Failed to remove from wishlist");
+        }
+      } else {
+        // Add to wishlist
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/wishlist/${productId}`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        });
+        const data = await response.json();
+        if (data.success) {
+          setIsInWishlist(true);
+          message.success("Added to wishlist");
+        } else {
+          message.error("Failed to add to wishlist");
+        }
+      }
+    } catch (error) {
+      console.error("Error toggling wishlist:", error);
+      message.error("Failed to update wishlist");
+    } finally {
+      setWishlistLoading(false);
+    }
+  };
 
   const fetchProduct = async () => {
     setLoading(true);
@@ -76,13 +183,34 @@ export default function ProductDetailPage() {
       if (data.success && data.data) {
         setProduct(data.data);
       } else {
-        message.error("Product not found");
+        setProduct(null);
+        message.error(data.error || "Product not found");
       }
     } catch (error) {
       console.error("Error fetching product:", error);
+      setProduct(null);
       message.error("Failed to load product");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchReviews = async () => {
+    setReviewsLoading(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reviews/product/${productId}`);
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setReviews(data.data);
+      } else {
+        setReviews([]);
+      }
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      setReviews([]);
+    } finally {
+      setReviewsLoading(false);
     }
   };
 
@@ -113,14 +241,20 @@ export default function ProductDetailPage() {
       return;
     }
 
+    if (!reviewForm.comment.trim()) {
+      message.warning("Please enter a review comment");
+      return;
+    }
+
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${productId}/reviews`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reviews`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${auth?.token}`,
         },
         body: JSON.stringify({
+          product: productId,
           rating: reviewForm.rating,
           comment: reviewForm.comment,
         }),
@@ -131,13 +265,28 @@ export default function ProductDetailPage() {
       if (data.success) {
         message.success("Review submitted successfully!");
         setReviewForm({ rating: 5, comment: "" });
-        fetchProduct(); // Refresh product data
+        fetchReviews(); // Refresh reviews
+        fetchProduct(); // Refresh product data to update rating
       } else {
         message.error(data.error || "Failed to submit review");
       }
     } catch (error) {
       console.error("Error submitting review:", error);
       message.error("Failed to submit review");
+    }
+  };
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: product?.name,
+        text: product?.description,
+        url: window.location.href,
+      });
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(window.location.href);
+      message.success("Link copied to clipboard!");
     }
   };
 
@@ -164,32 +313,51 @@ export default function ProductDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container-custom py-8">
+        {/* Breadcrumb Navigation */}
+        <Breadcrumb className="mb-6">
+          <Breadcrumb.Item>
+            <Link href="/">
+              <HomeOutlined />
+            </Link>
+          </Breadcrumb.Item>
+          <Breadcrumb.Item>
+            <Link href="/products">Products</Link>
+          </Breadcrumb.Item>
+          <Breadcrumb.Item>
+            <Link href={`/categories/${product.category._id}`}>{product.category.name}</Link>
+          </Breadcrumb.Item>
+          <Breadcrumb.Item>{product.name}</Breadcrumb.Item>
+        </Breadcrumb>
+
         <Row gutter={[32, 32]}>
           {/* Product Images */}
           <Col xs={24} lg={12}>
             <Card>
-              <div className="relative h-96 mb-4">
+              <div className="relative h-96 mb-4 group">
                 <Image
                   src={product.images[selectedImage] || "/placeholder-product.jpg"}
                   alt={product.name}
                   fill
-                  className="object-cover rounded-lg"
+                  className="object-cover rounded-lg transition-transform duration-300 group-hover:scale-105"
                 />
                 {discountPercentage > 0 && (
-                  <Tag color="red" className="absolute top-2 left-2">
+                  <Tag color="red" className="absolute top-2 left-2 z-10">
                     -{discountPercentage}%
                   </Tag>
                 )}
+                <div className="absolute top-2 right-2 z-10">
+                  <Button type="text" icon={<ShareAltOutlined />} onClick={handleShare} className="bg-white/80 hover:bg-white" />
+                </div>
               </div>
 
               {/* Thumbnail Images */}
               {product.images.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto">
+                <div className="flex gap-2 overflow-x-auto pb-2">
                   {product.images.map((image, index) => (
                     <div
                       key={index}
-                      className={`relative w-16 h-16 cursor-pointer border-2 rounded-lg overflow-hidden ${
-                        selectedImage === index ? "border-blue-500" : "border-gray-200"
+                      className={`relative w-16 h-16 cursor-pointer border-2 rounded-lg overflow-hidden flex-shrink-0 transition-all duration-200 ${
+                        selectedImage === index ? "border-blue-500 shadow-lg" : "border-gray-200 hover:border-blue-300"
                       }`}
                       onClick={() => setSelectedImage(index)}
                     >
@@ -224,11 +392,14 @@ export default function ProductDetailPage() {
 
                 <p className="text-gray-600 mb-6">{product.description}</p>
 
+                {/* Stock Status */}
                 <div className="mb-6">
                   <div className="flex items-center gap-4 mb-4">
                     <span className="text-sm font-medium text-gray-700">Quantity:</span>
                     <InputNumber min={1} max={product.stock} value={quantity} onChange={(value) => setQuantity(value || 1)} />
-                    <span className="text-sm text-gray-500">{product.stock} available</span>
+                    <span className={`text-sm ${product.stock > 0 ? "text-green-600" : "text-red-600"}`}>
+                      {product.stock > 0 ? `${product.stock} available` : "Out of stock"}
+                    </span>
                   </div>
 
                   <div className="flex gap-2">
@@ -238,11 +409,18 @@ export default function ProductDetailPage() {
                       icon={<ShoppingCartOutlined />}
                       onClick={handleAddToCart}
                       disabled={product.stock === 0}
+                      className="flex-1"
                     >
-                      Add to Cart
+                      {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
                     </Button>
-                    <Button size="large" icon={<HeartOutlined />}>
-                      Wishlist
+                    <Button
+                      size="large"
+                      icon={<HeartOutlined />}
+                      onClick={handleWishlistToggle}
+                      loading={wishlistLoading}
+                      className={isInWishlist ? "text-red-500 border-red-500" : ""}
+                    >
+                      {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
                     </Button>
                   </div>
                 </div>
@@ -292,8 +470,12 @@ export default function ProductDetailPage() {
 
               {/* Reviews List */}
               <div className="space-y-4">
-                {product.reviews && product.reviews.length > 0 ? (
-                  product.reviews.map((review) => (
+                {reviewsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Spin size="large" />
+                  </div>
+                ) : reviews && reviews.length > 0 ? (
+                  reviews.map((review) => (
                     <div key={review._id} className="border-b border-gray-200 pb-4">
                       <div className="flex items-start gap-3">
                         <Avatar icon={<UserOutlined />} />
@@ -302,7 +484,7 @@ export default function ProductDetailPage() {
                             <span className="font-medium">
                               {review.user.firstName} {review.user.lastName}
                             </span>
-                            <Rate disabled defaultValue={review.rating} size="small" />
+                            <Rate disabled defaultValue={review.rating} />
                           </div>
                           <p className="text-gray-600 mb-2">{review.comment}</p>
                           <span className="text-sm text-gray-400">{new Date(review.createdAt).toLocaleDateString()}</span>
@@ -317,6 +499,72 @@ export default function ProductDetailPage() {
             </Card>
           </Col>
         </Row>
+
+        {/* Related Products Section */}
+        {relatedProducts.length > 0 && (
+          <Row className="mt-8">
+            <Col span={24}>
+              <Card title="Related Products">
+                {relatedLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Spin size="large" />
+                  </div>
+                ) : (
+                  <Row gutter={[16, 16]}>
+                    {relatedProducts.map((relatedProduct) => (
+                      <Col xs={24} sm={12} md={8} lg={6} key={relatedProduct._id}>
+                        <Card
+                          hoverable
+                          className="h-full"
+                          cover={
+                            <div className="relative h-48 overflow-hidden">
+                              <Image
+                                src={relatedProduct.images?.[0] || "/placeholder-product.jpg"}
+                                alt={relatedProduct.name}
+                                fill
+                                className="object-cover"
+                              />
+                              {relatedProduct.discount && (
+                                <Tag color="red" className="absolute top-2 left-2">
+                                  -{relatedProduct.discount}%
+                                </Tag>
+                              )}
+                            </div>
+                          }
+                          actions={[
+                            <Link key="view" href={`/products/${relatedProduct._id}`}>
+                              <Button type="text" icon={<ShoppingCartOutlined />}>
+                                View Details
+                              </Button>
+                            </Link>,
+                          ]}
+                        >
+                          <Card.Meta
+                            title={relatedProduct.name}
+                            description={
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-lg font-bold text-blue-600">${relatedProduct.price}</span>
+                                  <div className="flex items-center">
+                                    <Rate disabled defaultValue={relatedProduct.averageRating} />
+                                    <span className="text-sm text-gray-600 ml-1">({relatedProduct.reviewCount})</span>
+                                  </div>
+                                </div>
+                                <Tag color="blue" className="mt-2">
+                                  {relatedProduct.category.name}
+                                </Tag>
+                              </div>
+                            }
+                          />
+                        </Card>
+                      </Col>
+                    ))}
+                  </Row>
+                )}
+              </Card>
+            </Col>
+          </Row>
+        )}
       </div>
     </div>
   );

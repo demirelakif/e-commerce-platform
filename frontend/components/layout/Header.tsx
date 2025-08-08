@@ -187,13 +187,13 @@ export default function Header() {
             <Button
               type="text"
               icon={
-                <Badge count={itemCount} size="small" offset={[-5, 5]}>
+                <Badge count={itemCount} size="small" offset={[-8, 8]} className="cart-badge">
                   <ShoppingCartOutlined className="text-xl" />
                 </Badge>
               }
               onClick={() => dispatch(toggleCartDrawer())}
               size="large"
-              className="relative"
+              className="relative flex items-center justify-center"
             />
 
             {/* User Menu */}

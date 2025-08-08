@@ -28,9 +28,18 @@ export default function CategoriesPage() {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`);
       const data = await response.json();
-      setCategories(data);
+      
+      // Handle the API response structure correctly
+      if (data.success && data.data) {
+        setCategories(Array.isArray(data.data) ? data.data : []);
+      } else if (Array.isArray(data)) {
+        setCategories(data);
+      } else {
+        setCategories([]);
+      }
     } catch (error) {
       console.error('Error fetching categories:', error);
+      setCategories([]);
     } finally {
       setLoading(false);
     }
