@@ -10,7 +10,8 @@ import Link from "next/link";
 import { register } from "@/store/slices/authSlice";
 
 interface RegisterForm {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -58,14 +59,25 @@ export default function RegisterPage() {
         <Card className="shadow-lg">
           <Form name="register" onFinish={onFinish} layout="vertical" size="large">
             <Form.Item
-              name="name"
-              label="Full Name"
+              name="firstName"
+              label="First Name"
               rules={[
-                { required: true, message: "Please input your full name!" },
-                { min: 2, message: "Name must be at least 2 characters!" },
+                { required: true, message: "Please input your first name!" },
+                { min: 2, message: "First name must be at least 2 characters!" },
               ]}
             >
-              <Input prefix={<UserOutlined className="text-gray-400" />} placeholder="Enter your full name" />
+              <Input prefix={<UserOutlined className="text-gray-400" />} placeholder="Enter your first name" />
+            </Form.Item>
+
+            <Form.Item
+              name="lastName"
+              label="Last Name"
+              rules={[
+                { required: true, message: "Please input your last name!" },
+                { min: 2, message: "Last name must be at least 2 characters!" },
+              ]}
+            >
+              <Input prefix={<UserOutlined className="text-gray-400" />} placeholder="Enter your last name" />
             </Form.Item>
 
             <Form.Item

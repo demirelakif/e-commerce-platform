@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Row, Col, Input, Select, Button, Pagination, Spin, Empty, Tag } from "antd";
-import { SearchOutlined, FilterOutlined, ShoppingCartOutlined, HeartOutlined } from "@ant-design/icons";
+import { Card, Row, Col, Input, Select, Button, Pagination, Spin, Empty, Tag, message } from "antd";
+import { SearchOutlined, FilterOutlined, ShoppingCartOutlined, HeartOutlined, HeartFilled } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store/store";
 import { addToCart } from "@/store/slices/cartSlice";
-import { message } from "antd";
+import { usersAPI } from "@/lib/api";
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 
 const { Search } = Input;
 const { Option } = Select;
@@ -33,22 +34,48 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string | undefined>(undefined);
   const [sortBy, setSortBy] = useState("name");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [categories, setCategories] = useState<any[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
+  const [wishlistItems, setWishlistItems] = useState<string[]>([]);
+  const [wishlistLoading, setWishlistLoading] = useState<{ [key: string]: boolean }>({});
 
   const dispatch = useDispatch<AppDispatch>();
   const auth = useSelector((state: RootState) => state.auth);
   const isAuthenticated = auth?.isAuthenticated || false;
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    // Check for search query in URL params
+    const searchParam = searchParams.get("search");
+    if (searchParam && searchParam !== searchQuery) {
+      setSearchQuery(searchParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchCategories();
     fetchProducts();
-  }, [currentPage, searchQuery, categoryFilter, sortBy, priceRange]);
+    if (isAuthenticated) {
+      fetchWishlist();
+    }
+  }, [currentPage, searchQuery, categoryFilter, sortBy, priceRange, isAuthenticated]);
+
+  const fetchWishlist = async () => {
+    try {
+      const response = await usersAPI.getWishlist();
+      if (response.data.success && response.data.data) {
+        const wishlistIds = response.data.data.map((item: any) => item._id);
+        setWishlistItems(wishlistIds);
+      }
+    } catch (error) {
+      console.error("Error fetching wishlist:", error);
+    }
+  };
 
   const fetchCategories = async () => {
     try {
@@ -78,7 +105,7 @@ export default function ProductsPage() {
         maxPrice: priceRange[1].toString(),
       });
 
-      // Only add category parameter if it's not empty
+      // Only add category parameter if it's not empty or undefined
       if (categoryFilter && categoryFilter.trim() !== "") {
         params.append("category", categoryFilter);
       }
@@ -123,12 +150,48 @@ export default function ProductsPage() {
     message.success("Added to cart!");
   };
 
+  const handleWishlistToggle = async (product: Product) => {
+    if (!isAuthenticated) {
+      message.warning("Please login to manage your wishlist");
+      return;
+    }
+
+    setWishlistLoading((prev) => ({ ...prev, [product._id]: true }));
+
+    try {
+      if (wishlistItems.includes(product._id)) {
+        // Remove from wishlist
+        const response = await usersAPI.removeFromWishlist(product._id);
+        if (response.data.success) {
+          setWishlistItems((prev) => prev.filter((id) => id !== product._id));
+          message.success("Removed from wishlist");
+        } else {
+          message.error("Failed to remove from wishlist");
+        }
+      } else {
+        // Add to wishlist
+        const response = await usersAPI.addToWishlist(product._id);
+        if (response.data.success) {
+          setWishlistItems((prev) => [...prev, product._id]);
+          message.success("Added to wishlist");
+        } else {
+          message.error("Failed to add to wishlist");
+        }
+      }
+    } catch (error) {
+      console.error("Error toggling wishlist:", error);
+      message.error("Failed to update wishlist");
+    } finally {
+      setWishlistLoading((prev) => ({ ...prev, [product._id]: false }));
+    }
+  };
+
   const handleSearch = (value: string) => {
     setSearchQuery(value);
     setCurrentPage(1);
   };
 
-  const handleCategoryChange = (value: string) => {
+  const handleCategoryChange = (value: string | undefined) => {
     setCategoryFilter(value);
     setCurrentPage(1);
   };
@@ -144,7 +207,7 @@ export default function ProductsPage() {
 
   const clearFilters = () => {
     setSearchQuery("");
-    setCategoryFilter("");
+    setCategoryFilter(undefined);
     setSortBy("name");
     setPriceRange([0, 10000]);
     setCurrentPage(1);
@@ -245,8 +308,15 @@ export default function ProductsPage() {
                       <Button key="cart" type="text" icon={<ShoppingCartOutlined />} onClick={() => handleAddToCart(product)}>
                         Add to Cart
                       </Button>,
-                      <Button key="wishlist" type="text" icon={<HeartOutlined />}>
-                        Wishlist
+                      <Button
+                        key="wishlist"
+                        type="text"
+                        icon={wishlistItems.includes(product._id) ? <HeartFilled className="text-red-500" /> : <HeartOutlined />}
+                        onClick={() => handleWishlistToggle(product)}
+                        loading={wishlistLoading[product._id]}
+                        className={wishlistItems.includes(product._id) ? "text-red-500" : ""}
+                      >
+                        {wishlistItems.includes(product._id) ? "Remove from Wishlist" : "Add to Wishlist"}
                       </Button>,
                     ]}
                   >

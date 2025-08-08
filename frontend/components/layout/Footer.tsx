@@ -1,25 +1,35 @@
-import Link from 'next/link';
-import { 
-  FacebookOutlined, 
-  TwitterOutlined, 
-  InstagramOutlined, 
+"use client";
+
+import Link from "next/link";
+import {
+  FacebookOutlined,
+  TwitterOutlined,
+  InstagramOutlined,
   LinkedinOutlined,
-  MailOutlined,
   PhoneOutlined,
-  EnvironmentOutlined
-} from '@ant-design/icons';
+  MailOutlined,
+  EnvironmentOutlined,
+} from "@ant-design/icons";
+import { useState, useEffect } from "react";
 
 export default function Footer() {
+  const [currentYear, setCurrentYear] = useState("");
+
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear().toString());
+  }, []);
+
   return (
     <footer className="bg-gray-900 text-white">
       <div className="container-custom py-12">
+        {/* Main Footer Content */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Company Info */}
-          <div className="col-span-1 md:col-span-2">
-            <h3 className="text-2xl font-bold mb-4">E-Commerce Platform</h3>
-            <p className="text-gray-300 mb-6 max-w-md">
-              Your trusted destination for quality products. We offer a wide range of items 
-              with excellent customer service and fast shipping.
+          <div>
+            <h4 className="text-lg font-semibold mb-4">E-Commerce Platform</h4>
+            <p className="text-gray-300 mb-4">
+              Your one-stop destination for all your shopping needs. Quality products, competitive prices, and excellent customer
+              service.
             </p>
             <div className="flex space-x-4">
               <Link href="#" className="text-gray-400 hover:text-white transition-colors">
@@ -122,11 +132,9 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-          <p className="text-gray-400">
-            © {new Date().getFullYear()} E-Commerce Platform. All rights reserved.
-          </p>
+          <p className="text-gray-400">© {currentYear} E-Commerce Platform. All rights reserved.</p>
         </div>
       </div>
     </footer>
   );
-} 
+}

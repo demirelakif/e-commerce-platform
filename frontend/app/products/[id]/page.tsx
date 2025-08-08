@@ -2,7 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { Card, Row, Col, Button, Spin, Empty, Tag, InputNumber, Divider, Rate, Avatar, Input, Breadcrumb } from "antd";
-import { ShoppingCartOutlined, HeartOutlined, StarFilled, UserOutlined, HomeOutlined, ShareAltOutlined } from "@ant-design/icons";
+import {
+  ShoppingCartOutlined,
+  HeartOutlined,
+  HeartFilled,
+  StarFilled,
+  UserOutlined,
+  HomeOutlined,
+  ShareAltOutlined,
+} from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store/store";
 import { addToCart } from "@/store/slices/cartSlice";
@@ -276,6 +284,11 @@ export default function ProductDetailPage() {
     }
   };
 
+  const formatDate = (dateString: string) => {
+    if (typeof window === "undefined") return "";
+    return new Date(dateString).toLocaleDateString();
+  };
+
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
@@ -415,7 +428,7 @@ export default function ProductDetailPage() {
                     </Button>
                     <Button
                       size="large"
-                      icon={<HeartOutlined />}
+                      icon={isInWishlist ? <HeartFilled className="text-red-500" /> : <HeartOutlined />}
                       onClick={handleWishlistToggle}
                       loading={wishlistLoading}
                       className={isInWishlist ? "text-red-500 border-red-500" : ""}
@@ -487,7 +500,7 @@ export default function ProductDetailPage() {
                             <Rate disabled defaultValue={review.rating} />
                           </div>
                           <p className="text-gray-600 mb-2">{review.comment}</p>
-                          <span className="text-sm text-gray-400">{new Date(review.createdAt).toLocaleDateString()}</span>
+                          <span className="text-sm text-gray-400">{formatDate(review.createdAt)}</span>
                         </div>
                       </div>
                     </div>

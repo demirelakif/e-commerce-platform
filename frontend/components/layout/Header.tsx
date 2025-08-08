@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/store/store";
@@ -16,21 +16,32 @@ import {
   DownOutlined,
 } from "@ant-design/icons";
 import { Button, Dropdown, Badge, Input, Drawer, List, Avatar } from "antd";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const { Search } = Input;
 
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const auth = useSelector((state: RootState) => state.auth);
   const cart = useSelector((state: RootState) => state.cart);
   const isAuthenticated = auth?.isAuthenticated || false;
   const user = auth?.user || null;
   const itemCount = cart?.itemCount || 0;
+
+  useEffect(() => {
+    setMounted(true);
+    // Set search query from URL params if available
+    const searchParam = searchParams.get("search");
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    }
+  }, [searchParams]);
 
   const handleSearch = (value: string) => {
     if (value.trim()) {
@@ -134,6 +145,24 @@ export default function Header() {
     { href: "/contact", label: "Contact" },
   ];
 
+  if (!mounted) {
+    return (
+      <header className="bg-white shadow-md sticky top-0 z-50 border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <Link href="/" className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">E</span>
+              </div>
+              <span className="text-xl font-bold text-gray-900 hidden sm:block">E-Commerce</span>
+            </Link>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header className="bg-white shadow-md sticky top-0 z-50 border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -187,8 +216,8 @@ export default function Header() {
             <Button
               type="text"
               icon={
-                <Badge count={itemCount} size="small" offset={[-8, 8]} className="cart-badge">
-                  <ShoppingCartOutlined className="text-xl" />
+                <Badge count={itemCount} size="default" offset={[-8, 8]} className="cart-badge">
+                  <ShoppingCartOutlined size={36} />
                 </Badge>
               }
               onClick={() => dispatch(toggleCartDrawer())}
@@ -207,9 +236,11 @@ export default function Header() {
               >
                 <Button type="text" className="flex items-center space-x-1 px-3 py-2 rounded-lg hover:bg-gray-100">
                   <Avatar size="small" className="bg-blue-600">
-                    {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                    {user?.firstName?.charAt(0)?.toUpperCase() || "U"}
                   </Avatar>
-                  <span className="hidden sm:block text-sm font-medium text-gray-700">{user?.name || "User"}</span>
+                  <span className="hidden sm:block text-sm font-medium text-gray-700">
+                    {user ? `${user.firstName} ${user.lastName}` : "User"}
+                  </span>
                   <DownOutlined className="text-xs" />
                 </Button>
               </Dropdown>
@@ -261,7 +292,14 @@ export default function Header() {
           {/* Mobile Search */}
           <div className="space-y-2">
             <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Search</h3>
-            <Search placeholder="Search products..." onSearch={handleSearch} enterButton={<SearchOutlined />} size="large" />
+            <Search
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onSearch={handleSearch}
+              enterButton={<SearchOutlined />}
+              size="large"
+            />
           </div>
 
           {/* User Actions */}
@@ -282,6 +320,13 @@ export default function Header() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   My Orders
+                </Link>
+                <Link
+                  href="/wishlist"
+                  className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Wishlist
                 </Link>
                 <button
                   onClick={() => {

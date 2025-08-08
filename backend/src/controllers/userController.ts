@@ -2,6 +2,59 @@ import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 import User from "../models/User";
 
+// @desc    Get all users (admin only)
+// @route   GET /api/users
+// @access  Private (Admin)
+export const getUsers = async (req: Request, res: Response) => {
+  try {
+    const { role, page = 1, limit = 10, search } = req.query;
+
+    // Build query
+    const query: any = {};
+    if (role) {
+      query.role = role;
+    }
+
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: "i" } },
+        { lastName: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Calculate pagination
+    const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+
+    // Execute query
+    const users = await User.find(query)
+      .select("-password -emailVerificationToken -emailVerificationExpires -passwordResetToken -passwordResetExpires")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit as string));
+
+    // Get total count for pagination
+    const total = await User.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: users,
+      pagination: {
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        total,
+        pages: Math.ceil(total / parseInt(limit as string)),
+      },
+    });
+  } catch (error) {
+    console.error("Get users error:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Server error",
+    });
+  }
+};
+
 // @desc    Update user profile
 // @route   PUT /api/users/profile
 // @access  Private

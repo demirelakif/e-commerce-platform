@@ -18,8 +18,8 @@ export const store = configureStore({
   preloadedState: {
     auth: {
       user: null,
-      token: typeof window !== "undefined" ? localStorage.getItem("token") : null,
-      isAuthenticated: typeof window !== "undefined" ? !!localStorage.getItem("token") : false,
+      token: null,
+      isAuthenticated: false,
       isLoading: false,
       error: null,
     },

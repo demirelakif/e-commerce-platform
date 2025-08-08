@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store/store";
-import { getCurrentUser } from "@/store/slices/authSlice";
+import { getCurrentUser, initializeAuth } from "@/store/slices/authSlice";
 import Header from "./Header";
 import Footer from "./Footer";
 import CartDrawer from "../cart/CartDrawer";
@@ -17,6 +17,9 @@ export default function Layout({ children }: LayoutProps) {
   const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
+    // Initialize auth state from localStorage on client side
+    dispatch(initializeAuth());
+
     // Check if user is authenticated on app load
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token");

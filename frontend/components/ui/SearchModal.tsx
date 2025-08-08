@@ -18,8 +18,8 @@ interface SearchResult {
   category: {
     name: string;
   };
-  rating: number;
-  numReviews: number;
+  averageRating: number;
+  reviewCount: number;
 }
 
 export default function SearchModal() {
@@ -47,11 +47,12 @@ export default function SearchModal() {
     setIsSearching(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products?search=${encodeURIComponent(value)}&limit=8`);
+      // Use the search endpoint instead of the products endpoint
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/search?q=${encodeURIComponent(value)}&limit=8`);
       const data = await response.json();
 
       if (data.success) {
-        setSearchResults(data.products || []);
+        setSearchResults(data.data || []);
         // Save to recent searches
         const searches = JSON.parse(localStorage.getItem("recentSearches") || "[]");
         const newSearches = [value, ...searches.filter((s: string) => s !== value)].slice(0, 5);
@@ -167,11 +168,11 @@ export default function SearchModal() {
                         title={
                           <div className="flex items-center space-x-2">
                             <span className="font-medium text-gray-900">{item.name}</span>
-                            {item.rating > 0 && (
+                            {item.averageRating > 0 && (
                               <div className="flex items-center space-x-1">
                                 <span className="text-yellow-500">★</span>
                                 <span className="text-sm text-gray-600">
-                                  {item.rating} ({item.numReviews})
+                                  {item.averageRating} ({item.reviewCount})
                                 </span>
                               </div>
                             )}

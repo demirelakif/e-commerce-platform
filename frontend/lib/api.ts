@@ -85,12 +85,24 @@ export const productsAPI = {
   getRelatedProducts: (id: string) => api.get(`/products/${id}/related`),
 
   searchProducts: (query: string, limit?: number) => api.get("/products/search", { params: { q: query, limit } }),
+
+  createProduct: (productData: any) => api.post("/products", productData),
+
+  updateProduct: (id: string, productData: any) => api.put(`/products/${id}`, productData),
+
+  deleteProduct: (id: string) => api.delete(`/products/${id}`),
 };
 
 export const categoriesAPI = {
   getCategories: () => api.get("/categories"),
 
   getCategory: (id: string) => api.get(`/categories/${id}`),
+
+  createCategory: (categoryData: any) => api.post("/categories", categoryData),
+
+  updateCategory: (id: string, categoryData: any) => api.put(`/categories/${id}`, categoryData),
+
+  deleteCategory: (id: string) => api.delete(`/categories/${id}`),
 };
 
 export const ordersAPI = {
@@ -145,6 +157,8 @@ export const reviewsAPI = {
       rating?: number;
     }
   ) => api.get(`/reviews/product/${productId}`, { params }),
+
+  getReviews: (params?: { page?: number; limit?: number; rating?: number }) => api.get("/reviews", { params }),
 
   createReview: (reviewData: { product: string; rating: number; title?: string; comment: string }) =>
     api.post("/reviews", reviewData),

@@ -1,27 +1,31 @@
-import { Request, Response } from 'express';
-import { validationResult } from 'express-validator';
-import Review from '../models/Review';
-import Product from '../models/Product';
+import { Request, Response } from "express";
+import { validationResult } from "express-validator";
+import Review from "../models/Review";
+import Product from "../models/Product";
 
-// @desc    Get product reviews
-// @route   GET /api/reviews/product/:productId
-// @access  Public
-export const getProductReviews = async (req: Request, res: Response) => {
+// @desc    Get all reviews (admin only)
+// @route   GET /api/reviews
+// @access  Private (Admin)
+export const getReviews = async (req: Request, res: Response) => {
   try {
-    const { page = 1, limit = 10, rating } = req.query;
+    const { page = 1, limit = 10, rating, isApproved, search } = req.query;
 
     // Build query
-    const query: any = { 
-      product: req.params.productId,
-      isApproved: true 
-    };
+    const query: any = {};
+
     if (rating) query.rating = parseInt(rating as string);
+    if (isApproved !== undefined) query.isApproved = isApproved === "true";
+
+    if (search) {
+      query.$or = [{ title: { $regex: search, $options: "i" } }, { comment: { $regex: search, $options: "i" } }];
+    }
 
     // Calculate pagination
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
 
     const reviews = await Review.find(query)
-      .populate('user', 'firstName lastName')
+      .populate("user", "firstName lastName email")
+      .populate("product", "name images")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit as string));
@@ -35,14 +39,65 @@ export const getProductReviews = async (req: Request, res: Response) => {
         page: parseInt(page as string),
         limit: parseInt(limit as string),
         total,
-        pages: Math.ceil(total / parseInt(limit as string))
-      }
+        pages: Math.ceil(total / parseInt(limit as string)),
+      },
     });
   } catch (error) {
-    console.error('Get product reviews error:', error);
+    console.error("Get reviews error:", error);
     return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
+    });
+  }
+};
+
+// @desc    Get product reviews
+// @route   GET /api/reviews/product/:productId
+// @access  Public
+export const getProductReviews = async (req: Request, res: Response) => {
+  try {
+    const { page = 1, limit = 10, rating, showPending = false } = req.query;
+
+    // Build query
+    const query: any = {
+      product: req.params.productId,
+    };
+
+    // Only show approved reviews by default, unless admin requests pending reviews
+    if (showPending && req.user?.role === "admin") {
+      query.isApproved = false; // Show only pending reviews for admins
+    } else {
+      query.isApproved = true; // Show only approved reviews for everyone else
+    }
+
+    if (rating) query.rating = parseInt(rating as string);
+
+    // Calculate pagination
+    const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+
+    const reviews = await Review.find(query)
+      .populate("user", "firstName lastName")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit as string));
+
+    const total = await Review.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: reviews,
+      pagination: {
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        total,
+        pages: Math.ceil(total / parseInt(limit as string)),
+      },
+    });
+  } catch (error) {
+    console.error("Get product reviews error:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Server error",
     });
   }
 };
@@ -56,7 +111,7 @@ export const createReview = async (req: Request, res: Response) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        error: errors.array()[0].msg
+        error: errors.array()[0].msg,
       });
     }
 
@@ -65,13 +120,13 @@ export const createReview = async (req: Request, res: Response) => {
     // Check if user already reviewed this product
     const existingReview = await Review.findOne({
       user: req.user!._id,
-      product
+      product,
     });
 
     if (existingReview) {
       return res.status(400).json({
         success: false,
-        error: 'You have already reviewed this product'
+        error: "You have already reviewed this product",
       });
     }
 
@@ -80,7 +135,7 @@ export const createReview = async (req: Request, res: Response) => {
     if (!productExists) {
       return res.status(404).json({
         success: false,
-        error: 'Product not found'
+        error: "Product not found",
       });
     }
 
@@ -90,22 +145,21 @@ export const createReview = async (req: Request, res: Response) => {
       rating,
       title,
       comment,
-      isApproved: false // Requires admin approval
+      isApproved: true, // Auto-approve reviews for now (can be changed to false for production)
     });
 
-    const populatedReview = await Review.findById(review._id)
-      .populate('user', 'firstName lastName');
+    const populatedReview = await Review.findById(review._id).populate("user", "firstName lastName");
 
     return res.status(201).json({
       success: true,
       data: populatedReview,
-      message: 'Review submitted successfully and pending approval'
+      message: "Review submitted successfully!",
     });
   } catch (error) {
-    console.error('Create review error:', error);
+    console.error("Create review error:", error);
     return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -119,7 +173,7 @@ export const updateReview = async (req: Request, res: Response) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        error: errors.array()[0].msg
+        error: errors.array()[0].msg,
       });
     }
 
@@ -128,7 +182,7 @@ export const updateReview = async (req: Request, res: Response) => {
     if (!review) {
       return res.status(404).json({
         success: false,
-        error: 'Review not found'
+        error: "Review not found",
       });
     }
 
@@ -136,25 +190,24 @@ export const updateReview = async (req: Request, res: Response) => {
     if (review.user?.toString() !== req.user!._id.toString()) {
       return res.status(403).json({
         success: false,
-        error: 'Not authorized to update this review'
+        error: "Not authorized to update this review",
       });
     }
 
-    const updatedReview = await Review.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    ).populate('user', 'firstName lastName');
+    const updatedReview = await Review.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).populate(
+      "user",
+      "firstName lastName"
+    );
 
     res.json({
       success: true,
-      data: updatedReview
+      data: updatedReview,
     });
   } catch (error) {
-    console.error('Update review error:', error);
+    console.error("Update review error:", error);
     return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -169,15 +222,15 @@ export const deleteReview = async (req: Request, res: Response) => {
     if (!review) {
       return res.status(404).json({
         success: false,
-        error: 'Review not found'
+        error: "Review not found",
       });
     }
 
     // Check if user owns this review or is admin
-    if (review.user?.toString() !== req.user!._id.toString() && req.user!.role !== 'admin') {
+    if (review.user?.toString() !== req.user!._id.toString() && req.user!.role !== "admin") {
       return res.status(403).json({
         success: false,
-        error: 'Not authorized to delete this review'
+        error: "Not authorized to delete this review",
       });
     }
 
@@ -185,13 +238,13 @@ export const deleteReview = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: 'Review deleted successfully'
+      message: "Review deleted successfully",
     });
   } catch (error) {
-    console.error('Delete review error:', error);
+    console.error("Delete review error:", error);
     return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -206,26 +259,25 @@ export const approveReview = async (req: Request, res: Response) => {
     if (!review) {
       return res.status(404).json({
         success: false,
-        error: 'Review not found'
+        error: "Review not found",
       });
     }
 
     review.isApproved = true;
     await review.save();
 
-    const populatedReview = await Review.findById(review._id)
-      .populate('user', 'firstName lastName');
+    const populatedReview = await Review.findById(review._id).populate("user", "firstName lastName");
 
     res.json({
       success: true,
       data: populatedReview,
-      message: 'Review approved successfully'
+      message: "Review approved successfully",
     });
   } catch (error) {
-    console.error('Approve review error:', error);
+    console.error("Approve review error:", error);
     return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -241,7 +293,7 @@ export const getMyReviews = async (req: Request, res: Response) => {
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
 
     const reviews = await Review.find({ user: req.user!._id })
-      .populate('product', 'name mainImage')
+      .populate("product", "name mainImage")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit as string));
@@ -255,14 +307,14 @@ export const getMyReviews = async (req: Request, res: Response) => {
         page: parseInt(page as string),
         limit: parseInt(limit as string),
         total,
-        pages: Math.ceil(total / parseInt(limit as string))
-      }
+        pages: Math.ceil(total / parseInt(limit as string)),
+      },
     });
   } catch (error) {
-    console.error('Get my reviews error:', error);
+    console.error("Get my reviews error:", error);
     return res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
-}; 
+};
