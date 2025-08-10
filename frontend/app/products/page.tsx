@@ -314,7 +314,11 @@ export default function ProductsPage() {
                         icon={wishlistItems.includes(product._id) ? <HeartFilled className="text-red-500" /> : <HeartOutlined />}
                         onClick={() => handleWishlistToggle(product)}
                         loading={wishlistLoading[product._id]}
-                        className={wishlistItems.includes(product._id) ? "text-red-500" : ""}
+                        className={`transition-all duration-200 ${
+                          wishlistItems.includes(product._id)
+                            ? "text-red-500 hover:text-red-600 hover:bg-red-50"
+                            : "text-gray-600 hover:text-red-500 hover:bg-red-50"
+                        }`}
                       >
                         {wishlistItems.includes(product._id) ? "Remove from Wishlist" : "Add to Wishlist"}
                       </Button>,

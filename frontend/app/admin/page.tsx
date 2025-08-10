@@ -1,15 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Row, Col, Statistic, Table, List, Avatar, Tag, Spin, Alert } from "antd";
-import {
-  ShoppingOutlined,
-  UserOutlined,
-  FileTextOutlined,
-  DollarOutlined,
-  TrendingUpOutlined,
-  EyeOutlined,
-} from "@ant-design/icons";
+import { Card, Row, Col, Statistic, Table, Avatar, Tag, Spin, Alert } from "antd";
+import { ShoppingOutlined, UserOutlined, FileTextOutlined, DollarOutlined, StarOutlined, EyeOutlined } from "@ant-design/icons";
 import { adminAPI } from "@/lib/api";
 
 interface DashboardStats {
@@ -104,7 +97,7 @@ export default function AdminDashboard() {
       title: "Customer",
       dataIndex: "user",
       key: "customer",
-      render: (user: any) => `${user.firstName} ${user.lastName}`,
+      render: (user: any) => `${user?.firstName || ""} ${user?.lastName || ""}`,
     },
     {
       title: "Total",
@@ -199,36 +192,35 @@ export default function AdminDashboard() {
         </Col>
         <Col xs={24} lg={12}>
           <Card title="Popular Products" className="h-full">
-            <List
-              dataSource={popularProducts}
-              renderItem={(item) => (
-                <List.Item>
-                  <List.Item.Meta
-                    avatar={<Avatar src={item.images[0]} shape="square" size={48} fallback={<ShoppingOutlined />} />}
-                    title={item.name}
-                    description={
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-green-600 font-semibold">${item.price.toFixed(2)}</span>
-                          <Tag color="blue">{item.category.name}</Tag>
-                        </div>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          <span>
-                            <EyeOutlined className="mr-1" />
-                            {item.viewCount} views
-                          </span>
-                          <span>
-                            <TrendingUpOutlined className="mr-1" />
-                            {item.averageRating.toFixed(1)} rating
-                          </span>
-                        </div>
+            <div className="space-y-4">
+              {popularProducts.map((item) => (
+                <div key={item._id} className="flex items-center space-x-3 p-3 border-b border-gray-100 last:border-b-0">
+                  <Avatar src={item.images?.[0]} shape="square" size={48}>
+                    <ShoppingOutlined />
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="font-medium">{item.name}</div>
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-green-600 font-semibold">${item.price.toFixed(2)}</span>
+                        <Tag color="blue">{item.category?.name || "N/A"}</Tag>
                       </div>
-                    }
-                  />
-                </List.Item>
-              )}
-              pagination={false}
-            />
+                      <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <span>
+                          <EyeOutlined className="mr-1" />
+                          {item.viewCount || 0} views
+                        </span>
+                        <span>
+                          <StarOutlined className="mr-1" />
+                          {(item.averageRating || 0).toFixed(1)} rating
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {popularProducts.length === 0 && <div className="text-center py-8 text-gray-500">No popular products found</div>}
+            </div>
           </Card>
         </Col>
       </Row>

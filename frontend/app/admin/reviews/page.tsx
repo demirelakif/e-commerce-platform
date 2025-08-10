@@ -79,10 +79,10 @@ export default function AdminReviews() {
 
   const filteredReviews = reviews.filter(
     (review) =>
-      review.product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      review.user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      review.user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      review.comment.toLowerCase().includes(searchQuery.toLowerCase())
+      review.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      review.user?.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      review.user?.lastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      review.comment?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const columns = [
@@ -92,8 +92,12 @@ export default function AdminReviews() {
       key: "product",
       render: (product: any) => (
         <div className="flex items-center space-x-2">
-          <img src={product.images[0] || "/placeholder.png"} alt={product.name} className="w-8 h-8 object-cover rounded" />
-          <span className="font-medium">{product.name}</span>
+          <img
+            src={product?.images?.[0] || "/placeholder.png"}
+            alt={product?.name || "Unknown Product"}
+            className="w-8 h-8 object-cover rounded"
+          />
+          <span className="font-medium">{product?.name || "Unknown Product"}</span>
         </div>
       ),
     },
@@ -101,14 +105,14 @@ export default function AdminReviews() {
       title: "Customer",
       dataIndex: "user",
       key: "user",
-      render: (user: any) => `${user.firstName} ${user.lastName}`,
+      render: (user: any) => `${user?.firstName || ""} ${user?.lastName || ""}`,
     },
     {
       title: "Rating",
       dataIndex: "rating",
       key: "rating",
-      render: (rating: number) => <Rate disabled defaultValue={rating} />,
-      sorter: (a: Review, b: Review) => a.rating - b.rating,
+      render: (rating: number) => <Rate disabled defaultValue={rating || 0} />,
+      sorter: (a: Review, b: Review) => (a.rating || 0) - (b.rating || 0),
     },
     {
       title: "Title",
@@ -122,7 +126,7 @@ export default function AdminReviews() {
       key: "comment",
       render: (comment: string) => (
         <div className="max-w-xs truncate" title={comment}>
-          {comment}
+          {comment || "No comment"}
         </div>
       ),
     },
@@ -228,25 +232,25 @@ export default function AdminReviews() {
           <div className="space-y-4">
             <div className="flex items-center space-x-4">
               <img
-                src={selectedReview.product.images[0] || "/placeholder.png"}
-                alt={selectedReview.product.name}
+                src={selectedReview.product?.images?.[0] || "/placeholder.png"}
+                alt={selectedReview.product?.name || "Unknown Product"}
                 className="w-16 h-16 object-cover rounded"
               />
               <div>
-                <h3 className="font-semibold">{selectedReview.product.name}</h3>
+                <h3 className="font-semibold">{selectedReview.product?.name || "Unknown Product"}</h3>
                 <p className="text-gray-600">
-                  Reviewed by {selectedReview.user.firstName} {selectedReview.user.lastName}
+                  Reviewed by {selectedReview.user?.firstName || ""} {selectedReview.user?.lastName || ""}
                 </p>
               </div>
             </div>
 
             <div>
               <div className="flex items-center space-x-2 mb-2">
-                <Rate disabled defaultValue={selectedReview.rating} />
-                <span className="text-gray-600">({selectedReview.rating}/5)</span>
+                <Rate disabled defaultValue={selectedReview.rating || 0} />
+                <span className="text-gray-600">({selectedReview.rating || 0}/5)</span>
               </div>
               {selectedReview.title && <h4 className="font-medium mb-2">{selectedReview.title}</h4>}
-              <p className="text-gray-700">{selectedReview.comment}</p>
+              <p className="text-gray-700">{selectedReview.comment || "No comment"}</p>
             </div>
 
             <div className="flex justify-between items-center">

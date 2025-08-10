@@ -431,7 +431,11 @@ export default function ProductDetailPage() {
                       icon={isInWishlist ? <HeartFilled className="text-red-500" /> : <HeartOutlined />}
                       onClick={handleWishlistToggle}
                       loading={wishlistLoading}
-                      className={isInWishlist ? "text-red-500 border-red-500" : ""}
+                      className={`transition-all duration-200 ${
+                        isInWishlist
+                          ? "text-red-500 border-red-500 hover:text-red-600 hover:bg-red-50"
+                          : "text-gray-600 hover:text-red-500 hover:bg-red-50 hover:border-red-500"
+                      }`}
                     >
                       {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
                     </Button>

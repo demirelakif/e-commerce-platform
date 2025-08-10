@@ -13,7 +13,7 @@ import {
 } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { usersAPI } from "@/lib/api";
+import { usersAPI, authAPI } from "@/lib/api";
 import { useRouter } from "next/navigation";
 
 const { TabPane } = Tabs;
@@ -40,6 +40,7 @@ interface UserProfile {
 }
 
 interface AddressFormData {
+  _id?: string;
   type: "shipping" | "billing";
   street: string;
   city: string;
@@ -72,16 +73,12 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      const data = await response.json();
-      if (data.success) {
-        setProfile(data.data);
+      setLoading(true);
+      const response = await authAPI.getCurrentUser();
+      if (response.data.success) {
+        setProfile(response.data.data);
       } else {
-        message.error("Failed to load profile");
+        message.error(response.data.error || "Failed to load profile");
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -111,9 +108,9 @@ export default function ProfilePage() {
 
   const handleAddressSubmit = async (values: AddressFormData) => {
     try {
-      if (editingAddress) {
+      if (editingAddress && editingAddress._id) {
         // Update existing address
-        const response = await usersAPI.updateAddress(editingAddress._id || "", values);
+        const response = await usersAPI.updateAddress(editingAddress._id, values);
         if (response.data.success) {
           message.success("Address updated successfully");
           setAddressModalVisible(false);
@@ -225,7 +222,7 @@ export default function ProfilePage() {
                 </Row>
 
                 <Form.Item label="Email" name="email">
-                  <Input prefix={<MailOutlined />} value={profile?.email} disabled />
+                  <Input prefix={<MailOutlined />} value={profile?.email || ""} disabled />
                 </Form.Item>
 
                 <Form.Item label="Phone" name="phone">
@@ -359,14 +356,14 @@ export default function ProfilePage() {
                 <Form.Item label="Address Type" name="type" rules={[{ required: true, message: "Please select address type" }]}>
                   <Input.Group compact>
                     <Button
-                      type="button"
+                      type="default"
                       onClick={() => addressForm.setFieldsValue({ type: "shipping" })}
                       className={addressForm.getFieldValue("type") === "shipping" ? "bg-blue-500 text-white" : ""}
                     >
                       Shipping
                     </Button>
                     <Button
-                      type="button"
+                      type="default"
                       onClick={() => addressForm.setFieldsValue({ type: "billing" })}
                       className={addressForm.getFieldValue("type") === "billing" ? "bg-blue-500 text-white" : ""}
                     >

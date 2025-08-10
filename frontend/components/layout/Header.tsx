@@ -16,7 +16,7 @@ import {
   DownOutlined,
 } from "@ant-design/icons";
 import { Button, Dropdown, Badge, Input, Drawer, List, Avatar } from "antd";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 const { Search } = Input;
 
@@ -26,7 +26,6 @@ export default function Header() {
   const [mounted, setMounted] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const auth = useSelector((state: RootState) => state.auth);
   const cart = useSelector((state: RootState) => state.cart);
@@ -36,12 +35,7 @@ export default function Header() {
 
   useEffect(() => {
     setMounted(true);
-    // Set search query from URL params if available
-    const searchParam = searchParams.get("search");
-    if (searchParam) {
-      setSearchQuery(searchParam);
-    }
-  }, [searchParams]);
+  }, []);
 
   const handleSearch = (value: string) => {
     if (value.trim()) {
@@ -292,14 +286,7 @@ export default function Header() {
           {/* Mobile Search */}
           <div className="space-y-2">
             <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Search</h3>
-            <Search
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onSearch={handleSearch}
-              enterButton={<SearchOutlined />}
-              size="large"
-            />
+            <Search placeholder="Search products..." onSearch={handleSearch} enterButton={<SearchOutlined />} size="large" />
           </div>
 
           {/* User Actions */}
@@ -320,13 +307,6 @@ export default function Header() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   My Orders
-                </Link>
-                <Link
-                  href="/wishlist"
-                  className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Wishlist
                 </Link>
                 <button
                   onClick={() => {
